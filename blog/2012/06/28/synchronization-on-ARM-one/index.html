@@ -1,0 +1,318 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>ARM体系架构下的同步操作（一） - Hamo's</title>
+  <meta name="author" content="Yang Bai">
+
+  
+  <meta name="description" content="处理器在访问共享资源时，必须对临界区进行同步，即保证同一时间内，只有一个对临界区的访问者。当共享资源为一内存地址时，原子操作是对该类型共享资源同步访问的最佳方式。随着应用的日益复杂和SMP的广泛使用，处理器都开始提供硬件同步原语以支持原子地更新内存地址。 CISC处理器比如IA32， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.hamobai.com/blog/2012/06/28/synchronization-on-ARM-one">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Hamo's" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-32981979-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Hamo's</a></h1>
+  
+    <h2>$ cat /boot/vmlinuz /dev/{log, random, zero, null}</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:blog.hamobai.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">ARM体系架构下的同步操作（一）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-06-28T18:23:00+08:00" pubdate data-updated="true">Jun 28<span>th</span>, 2012</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>处理器在访问共享资源时，必须对临界区进行同步，即保证同一时间内，只有一个对临界区的访问者。当共享资源为一内存地址时，原子操作是对该类型共享资源同步访问的最佳方式。随着应用的日益复杂和SMP的广泛使用，处理器都开始提供硬件同步原语以支持原子地更新内存地址。</p>
+
+<p>CISC处理器比如IA32，可以提供单独的多种原子指令完成复杂的原子操作，由处理器保证读-修改-写回过程的原子性。而RISC则不同，由于除Load和Store的所有操作都必须在寄存器中完成，如何保证从装载内存地址到寄存器，到修改寄存器中的值，再到将寄存器中的值写回内存中可以原子性的完成，便成为了处理器设计的关键。</p>
+
+<p>从ARMv6架构开始，ARM处理器提供了Exclusive accesses同步原语，包含两条指令：</p>
+
+<pre><code>LDREX
+STREX
+</code></pre>
+
+<p>LDREX和STREX指令，将对一个内存地址的原子操作拆分成两个步骤，同处理器内置的记录exclusive accesses的exclusive monitors一起，完成对内存的原子操作。</p>
+
+<h3>LDREX</h3>
+
+<p>LDREX与LDR指令类似，完成将内存中的数据加载进寄存器的操作。与LDR指令不同的是，该指令也会同时初始化exclusive monitor来记录对该地址的同步访问。例如</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='gas'><span class='line'><span class="nf">LDREX</span> <span class="no">R1</span><span class="p">,</span> <span class="err">[</span><span class="no">R0</span><span class="err">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>会将R0寄存器中内存地址的数据，加载进R1中并更新exclusive monitor。</p>
+
+<h3>STREX</h3>
+
+<p>该指令的格式为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='gas'><span class='line'><span class="nf">STREX</span> <span class="no">Rd</span><span class="p">,</span> <span class="no">Rm</span><span class="p">,</span> <span class="err">[</span><span class="no">Rn</span><span class="err">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>STREX会根据exclusive monitor的指示决定是否将寄存器中的值写回内存中。如果exclusive monitor许可这次写入，则STREX会将寄存器Rm的值写回Rn所存储的内存地址中，并将Rd寄存器设置为0表示操作成功。如果exclusive monitor禁止这次写入，则STREX指令会将Rd寄存器的值设置为1表示操作失败并放弃这次写入。应用程序可以根据Rd中的值来判断写回是否成功。</p>
+
+<p>在下篇文章中，我会以Linux Kernel中如何编写原子操作代码具体介绍LDREX和STREX的使用方法，并介绍gcc提供的ARM架构下的关于这两条指令的C语言扩展。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Yang Bai</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-06-28T18:23:00+08:00" pubdate data-updated="true">Jun 28<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/arm/'>ARM</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://blog.hamobai.com/blog/2012/06/28/synchronization-on-ARM-one/" data-via="hamo" data-counturl="http://blog.hamobai.com/blog/2012/06/28/synchronization-on-ARM-one/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/06/29/synchronization-on-ARM-two/" title="Next Post: ARM体系架构下的同步操作（二）">ARM体系架构下的同步操作（二） &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p>A little something about me.</p>
+</section>
+<section>
+	<h1>Blogroll</h1>
+	<ul>
+		<li><a href="http://adam8157.info/" target="_blank">Adam's</a></li>
+		<li><a href="http://roylez.heroku.com/" target="_blank">@roylez</a></li>
+		<li><a href="https://anylinux.net/" target="_blank">anyLinux</a></li>
+		<li><a href="http://guaneryu.com/blog/" target="_blank">认真生活-Gery</a></li>
+	</ul>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/07/03/IO-scheduler-in-Linux-kernel/">Linux内核中的IO调度器简介</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/06/29/synchronization-on-ARM-two/">ARM体系架构下的同步操作（二）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/06/28/synchronization-on-ARM-one/">ARM体系架构下的同步操作（一）</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/hamo">@hamo</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'hamo',
+            count: 5,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - Yang Bai -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'hamo';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://blog.hamobai.com/blog/2012/06/28/synchronization-on-ARM-one/';
+        var disqus_url = 'http://blog.hamobai.com/blog/2012/06/28/synchronization-on-ARM-one/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

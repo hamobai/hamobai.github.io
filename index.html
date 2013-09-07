@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>My Octopress Blog</title>
-  <meta name="author" content="Your Name">
+  <title>Hamo's</title>
+  <meta name="author" content="Yang Bai">
 
   
-  <meta name="description" content=" Blog Archives Recent Posts ">
+  <meta name="description" content="从2.6系列开始，Linux内核引入了全新的IO调度子系统。与2.4系列内核只有一个惟一的，通用的I/O调度器相比，最新的Linux内核提供了CFQ(默认), deadline和noop三种IO调度器。（anticipatory调度器从2.6.33开始被移除，commit &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,10 +18,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://hamobai.github.io">
+  <link rel="canonical" href="http://blog.hamobai.com">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
-  <link href="/atom.xml" rel="alternate" title="My Octopress Blog" type="application/atom+xml">
+  <link href="/atom.xml" rel="alternate" title="Hamo's" type="application/atom+xml">
   <script src="/javascripts/modernizr-2.0.js"></script>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
@@ -31,14 +31,26 @@
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
   
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-32981979-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
 
 </head>
 
 <body   >
   <header role="banner"><hgroup>
-  <h1><a href="/">My Octopress Blog</a></h1>
+  <h1><a href="/">Hamo's</a></h1>
   
-    <h2>A blogging framework for hackers.</h2>
+    <h2>$ cat /boot/vmlinuz /dev/{log, random, zero, null}</h2>
   
 </hgroup>
 
@@ -50,7 +62,7 @@
   
 <form action="http://google.com/search" method="get">
   <fieldset role="search">
-    <input type="hidden" name="q" value="site:hamobai.github.io" />
+    <input type="hidden" name="q" value="site:blog.hamobai.com" />
     <input class="search" type="text" name="q" results="0" placeholder="Search"/>
   </fieldset>
 </form>
@@ -66,6 +78,358 @@
       <div class="blog-index">
   
   
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/07/03/IO-scheduler-in-Linux-kernel/">Linux内核中的IO调度器简介</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-07-03T13:45:00+08:00" pubdate data-updated="true">Jul 3<span>rd</span>, 2012</time>
+        
+         | <a href="/blog/2012/07/03/IO-scheduler-in-Linux-kernel/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>从2.6系列开始，Linux内核引入了全新的IO调度子系统。与2.4系列内核只有一个惟一的，通用的I/O调度器相比，最新的Linux内核提供了CFQ(默认), deadline和noop三种IO调度器。（anticipatory调度器从2.6.33开始被移除，<a href="http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=492af6350a5ccf087e4964104a276ed358811458">commit 492af6350a5ccf087e4964104a276ed358811458</a>，被CFQ所取代）。在这篇文章里，我会首先介绍三种IO调度器各自的特点和应用场景，之后会介绍Linux内核提供的为每一个块设备指定IO调度器和调整IO调度器参数的接口。Ok, let&rsquo;s go!</p>
+
+<h3>CFQ(Complete Fair Queuing)</h3>
+
+<p>CFQ实现了一种QoS的IO调度算法。该算法为每一个进程分配一个时间窗口，在该时间窗口内，允许进程发射IO请求。通过时间窗口在不同进程间的移动，保证了对于所有进程而言都有公平的发射IO请求的权利。同时，与CFS(Complete Fair Schedule)相同，该算法也实现了进程的优先级控制，可以保证高优先级进程可以获得更长的时间窗口。主要代码位于</p>
+
+<pre><code>block/cfq-iosched.c
+</code></pre>
+
+<p>CFQ调度算法适用于系统中存在多任务I/O请求的情况，通过在多进程中轮换，保证了系统I/O请求整体的低延迟。但是，对于只有少数进程存在大量密集的I/O请求的情况，则会出现明显的I/O性能下降。</p>
+
+<p>CFQ调度器主要提供如下三个优化参数：</p>
+
+<ol>
+<li>slice_idle</li>
+</ol>
+
+
+<p>如果一个进程在自己的时间窗口里，经过slice_idle时间都没有发射I/O请求，则调度选择下一个程序。通过该机制，可以有效利用I/O请求的局部性原理，提高系统的I/O吞吐量。</p>
+
+<ol>
+<li>quantum</li>
+</ol>
+
+
+<p>该参数控制在一个时间窗口内可以发射的I/O请求的最大数目。</p>
+
+<ol>
+<li>low_latency</li>
+</ol>
+
+
+<p>对于I/O请求延时非常重要的任务，将该参数设置为1可以降低I/O请求的延时。</p>
+
+<h3>NOOP</h3>
+
+<p>顾名思义，NOOP调度器并不完成任何复杂的工作，只是将上层发来的I/O请求直接发送至下层，实现了一个FIFO的I/O请求队列。主要代码位于</p>
+
+<pre><code>block/noop-iosched.c
+</code></pre>
+
+<p>其应用环境主要有以下两种：一是物理设备包含自己的I/O调度程序，比如SCSI的TCQ；二是寻道时间可以忽略不计的设备，比如SSD等。</p>
+
+<h3>DEADLINE</h3>
+
+<p>DEADLINE调度算法主要针对I/O请求的延时而设计，每个I/O请求都被附加一个最后执行期限。该算法维护两类队列，一是按照扇区排序的读写请求队列；二是按照过期时间排序的读写请求队列。如果当前没有I/O请求过期，则会按照扇区顺序执行I/O请求；如果发现过期的I/O请求，则会处理按照过期时间排序的队列，直到所有过期请求都被发射为止。在处理请求时，该算法会优先考虑读请求。主要代码位于</p>
+
+<pre><code>block/deadline-iosched.c
+</code></pre>
+
+<p>当系统中存在的I/O请求进程比较少时，与CFQ算法相比，DEADLINE算法可以提供较高的I/O吞吐率，特别是对于使用了自带I/O请求队列的设备，如SCSI的TCQ的时候。</p>
+
+<p>DEADLINE调度算法提供如下三个参数：</p>
+
+<ol>
+<li>writes_starved</li>
+</ol>
+
+
+<p>该参数控制当读写队列均不为空时，发射多少个读请求后，允许发射写请求。</p>
+
+<ol>
+<li>read_expire</li>
+</ol>
+
+
+<p>参数控制读请求的过期时间，单位毫秒。</p>
+
+<ol>
+<li>write_expire</li>
+</ol>
+
+
+<p>参数控制写请求的过期时间，单位毫秒。</p>
+
+<h3>为块I/O设备设置I/O调度算法的方法</h3>
+
+<p>Linux内核允许用户为每个单独的块I/O设备设置不同的I/O调度算法。这样，根据块设备的不同以及读写该设备的应用不同，可以最大限度的提升系统的I/O吞吐率。设置接口通过sysfs导出。如果当前系统中没有挂载sysfs的话，使用如下命令可以将sysfs挂载至/sys目录下。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='console'><span class='line'><span class="gp">root@trinity:~#</span> mount -t sysfs sysfs /sys
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们以sda为例，介绍修改设备调度算法的方式。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='console'><span class='line'><span class="gp">root@trinity:~#</span> cat /sys/block/sda/queue/scheduler
+</span><span class='line'><span class="go">noop deadline [cfq] </span>
+</span><span class='line'><span class="gp">root@trinity:~#</span> <span class="nb">echo</span> <span class="s2">&quot;deadline&quot;</span> &gt; /sys/block/sda/queue/scheduler
+</span><span class='line'><span class="gp">root@trinity:~#</span> cat /sys/block/sda/queue/scheduler
+</span><span class='line'><span class="go">noop [deadline] cfq </span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>当然，这里的修改是临时的。系统重启后设备的调度算法会重置为默认的CFQ。如果希望保证每次系统启动都使用自定的调度算法，可以在</p>
+
+<pre><code>/etc/fstab
+</code></pre>
+
+<p>文件中为对应的设备传递如下参数：</p>
+
+<pre><code>elevator=deadline
+</code></pre>
+
+<p>便会将对应设备的调度算法设置为deadline，其他算法类似。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/06/29/synchronization-on-ARM-two/">ARM体系架构下的同步操作（二）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-06-29T12:31:00+08:00" pubdate data-updated="true">Jun 29<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/06/29/synchronization-on-ARM-two/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在<a href="/2012/06/28/synchronization-on-ARM-one" title="ARM体系架构下的同步操作（一）">上一篇文章</a>中，我们介绍了ARM体系架构下，为了实现对内存地址同步访问而引入的</p>
+
+<pre><code>LDREX
+STREX
+</code></pre>
+
+<p>两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构的原子相加操作为例，介绍这两条指令的使用方法；之后，会介绍GCC提供的一些内置函数，这些同步函数使用这两条指令完成同步操作。</p>
+
+<h3>Linux Kernel中的atomic_add函数</h3>
+
+<p>如下是Linux Kernel中使用的atomic_add函数的定义，它实现原子的给v指向的atomic_t增加i的功能。</p>
+
+<figure class='code'><figcaption><span>atomic_add</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">static</span> <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">atomic_add</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">atomic_t</span> <span class="o">*</span><span class="n">v</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>        <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">tmp</span><span class="p">;</span>
+</span><span class='line'>        <span class="kt">int</span> <span class="n">result</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">__asm__</span> <span class="n">__volatile__</span><span class="p">(</span><span class="s">&quot;@ atomic_add</span><span class="se">\n</span><span class="s">&quot;</span>
+</span><span class='line'><span class="s">&quot;1:     ldrex   %0, [%3]</span><span class="se">\n</span><span class="s">&quot;</span>
+</span><span class='line'><span class="s">&quot;       add     %0, %0, %4</span><span class="se">\n</span><span class="s">&quot;</span>
+</span><span class='line'><span class="s">&quot;       strex   %1, %0, [%3]</span><span class="se">\n</span><span class="s">&quot;</span>
+</span><span class='line'><span class="s">&quot;       teq     %1, #0</span><span class="se">\n</span><span class="s">&quot;</span>
+</span><span class='line'><span class="s">&quot;       bne     1b&quot;</span>
+</span><span class='line'>        <span class="o">:</span> <span class="s">&quot;=&amp;r&quot;</span> <span class="p">(</span><span class="n">result</span><span class="p">),</span> <span class="s">&quot;=&amp;r&quot;</span> <span class="p">(</span><span class="n">tmp</span><span class="p">),</span> <span class="s">&quot;+Qo&quot;</span> <span class="p">(</span><span class="n">v</span><span class="o">-&gt;</span><span class="n">counter</span><span class="p">)</span>
+</span><span class='line'>        <span class="o">:</span> <span class="s">&quot;r&quot;</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">v</span><span class="o">-&gt;</span><span class="n">counter</span><span class="p">),</span> <span class="s">&quot;Ir&quot;</span> <span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</span><span class='line'>        <span class="o">:</span> <span class="s">&quot;cc&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在第7行，使用LDREX指令将v->counter所指向的内存地址的值装入寄存器中，并初始化exclusive monitor。
+在第8行，将该寄存器中的值与i相加。
+在第9，10，11行，使用STREX指令尝试将修改后的值存入原来的地址，如果STREX写入%1寄存器的值为0，则认为原子更新成功，函数返回；如果%1寄存器的值不为0，则认为exclusive monitor拒绝了本次对内存地址的访问，则跳转回第7行重新进行以上所述的过程，直到成功将修改后的值写入内存为止。该过程可能多次反复进行，但可以保证，在最后一次的读-修改-写回的过程中，没有其他代码访问该内存地址。</p>
+
+<h3>GCC内置的原子操作函数</h3>
+
+<p>看了上面的GCC内联汇编，是不是有点晕？在用户态下，GCC为我们提供了一系列内置函数，这些函数可以让我们既享受原子操作的好处，又免于编写复杂的内联汇编指令。这一系列的函数均以__sync开头，分为如下几类：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">type</span> <span class="n">__sync_fetch_and_add</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_fetch_and_sub</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_fetch_and_or</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_fetch_and_and</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_fetch_and_xor</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_fetch_and_nand</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这一系列函数完成对ptr所指向的内存地址的对应操作，并返回操作之前的值。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">type</span> <span class="n">__sync_add_and_fetch</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_sub_and_fetch</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_or_and_fetch</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_and_and_fetch</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_xor_and_fetch</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_nand_and_fetch</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这一系列函数完成对ptr所指向的内存地址的对应操作，并返回操作之后的值。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">bool</span> <span class="n">__sync_bool_compare_and_swap</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">oldval</span><span class="p">,</span> <span class="n">type</span> <span class="n">newval</span><span class="p">,</span> <span class="p">...)</span>
+</span><span class='line'><span class="n">type</span> <span class="n">__sync_val_compare_and_swap</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">oldval</span><span class="p">,</span> <span class="n">type</span> <span class="n">newval</span><span class="p">,</span> <span class="p">...)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这两个函数完成对变量的原子比较和交换。即如果ptr所指向的内存地址存放的值与oldval相同的话，则将其用newval的值替换。
+返回bool类型的函数返回比较的结果，相同为true，不同为false；返回type的函数返回的是ptr指向地址交换前存放的值。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/06/28/synchronization-on-ARM-one/">ARM体系架构下的同步操作（一）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-06-28T18:23:00+08:00" pubdate data-updated="true">Jun 28<span>th</span>, 2012</time>
+        
+         | <a href="/blog/2012/06/28/synchronization-on-ARM-one/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>处理器在访问共享资源时，必须对临界区进行同步，即保证同一时间内，只有一个对临界区的访问者。当共享资源为一内存地址时，原子操作是对该类型共享资源同步访问的最佳方式。随着应用的日益复杂和SMP的广泛使用，处理器都开始提供硬件同步原语以支持原子地更新内存地址。</p>
+
+<p>CISC处理器比如IA32，可以提供单独的多种原子指令完成复杂的原子操作，由处理器保证读-修改-写回过程的原子性。而RISC则不同，由于除Load和Store的所有操作都必须在寄存器中完成，如何保证从装载内存地址到寄存器，到修改寄存器中的值，再到将寄存器中的值写回内存中可以原子性的完成，便成为了处理器设计的关键。</p>
+
+<p>从ARMv6架构开始，ARM处理器提供了Exclusive accesses同步原语，包含两条指令：</p>
+
+<pre><code>LDREX
+STREX
+</code></pre>
+
+<p>LDREX和STREX指令，将对一个内存地址的原子操作拆分成两个步骤，同处理器内置的记录exclusive accesses的exclusive monitors一起，完成对内存的原子操作。</p>
+
+<h3>LDREX</h3>
+
+<p>LDREX与LDR指令类似，完成将内存中的数据加载进寄存器的操作。与LDR指令不同的是，该指令也会同时初始化exclusive monitor来记录对该地址的同步访问。例如</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='gas'><span class='line'><span class="nf">LDREX</span> <span class="no">R1</span><span class="p">,</span> <span class="err">[</span><span class="no">R0</span><span class="err">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>会将R0寄存器中内存地址的数据，加载进R1中并更新exclusive monitor。</p>
+
+<h3>STREX</h3>
+
+<p>该指令的格式为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='gas'><span class='line'><span class="nf">STREX</span> <span class="no">Rd</span><span class="p">,</span> <span class="no">Rm</span><span class="p">,</span> <span class="err">[</span><span class="no">Rn</span><span class="err">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>STREX会根据exclusive monitor的指示决定是否将寄存器中的值写回内存中。如果exclusive monitor许可这次写入，则STREX会将寄存器Rm的值写回Rn所存储的内存地址中，并将Rd寄存器设置为0表示操作成功。如果exclusive monitor禁止这次写入，则STREX指令会将Rd寄存器的值设置为1表示操作失败并放弃这次写入。应用程序可以根据Rd中的值来判断写回是否成功。</p>
+
+<p>在下篇文章中，我会以Linux Kernel中如何编写原子操作代码具体介绍LDREX和STREX的使用方法，并介绍gcc提供的ARM架构下的关于这两条指令的C语言扩展。</p>
+</div>
+  
+  
+
+
+    </article>
+  
   <div class="pagination">
     
     <a href="/blog/archives">Blog Archives</a>
@@ -75,14 +439,65 @@
 <aside class="sidebar">
   
     <section>
+  <h1>About Me</h1>
+  <p>A little something about me.</p>
+</section>
+<section>
+	<h1>Blogroll</h1>
+	<ul>
+		<li><a href="http://adam8157.info/" target="_blank">Adam&#8217;s</a></li>
+		<li><a href="http://roylez.heroku.com/" target="_blank">@roylez</a></li>
+		<li><a href="https://anylinux.net/" target="_blank">anyLinux</a></li>
+		<li><a href="http://guaneryu.com/blog/" target="_blank">认真生活-Gery</a></li>
+	</ul>
+</section>
+<section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/07/03/IO-scheduler-in-Linux-kernel/">Linux内核中的IO调度器简介</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/06/29/synchronization-on-ARM-two/">ARM体系架构下的同步操作（二）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/06/28/synchronization-on-ARM-one/">ARM体系架构下的同步操作（一）</a>
+      </li>
     
   </ul>
 </section>
 
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/hamo">@hamo</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
 
-
+        github.showRepos({
+            user: 'hamo',
+            count: 5,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
 
 
   
@@ -91,12 +506,25 @@
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2013 - Your Name -
+  Copyright &copy; 2013 - Yang Bai -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 
 </footer>
   
+
+<script type="text/javascript">
+      var disqus_shortname = 'hamo';
+      
+        
+        var disqus_script = 'count.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
 
 
 

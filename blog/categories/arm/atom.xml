@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: ARM | Hamo's]]></title>
+  <link href="http://blog.hamobai.com/blog/categories/arm/atom.xml" rel="self"/>
+  <link href="http://blog.hamobai.com/"/>
+  <updated>2013-09-07T22:58:05+08:00</updated>
+  <id>http://blog.hamobai.com/</id>
+  <author>
+    <name><![CDATA[Yang Bai]]></name>
+    <email><![CDATA[hamo.by@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[ARM体系架构下的同步操作（二）]]></title>
+    <link href="http://blog.hamobai.com/blog/2012/06/29/synchronization-on-ARM-two/"/>
+    <updated>2012-06-29T12:31:00+08:00</updated>
+    <id>http://blog.hamobai.com/blog/2012/06/29/synchronization-on-ARM-two</id>
+    <content type="html"><![CDATA[<p>在<a href="/2012/06/28/synchronization-on-ARM-one" title="ARM体系架构下的同步操作（一）">上一篇文章</a>中，我们介绍了ARM体系架构下，为了实现对内存地址同步访问而引入的</p>
+
+<pre><code>LDREX
+STREX
+</code></pre>
+
+<p>两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构的原子相加操作为例，介绍这两条指令的使用方法；之后，会介绍GCC提供的一些内置函数，这些同步函数使用这两条指令完成同步操作。</p>
+
+<h3>Linux Kernel中的atomic_add函数</h3>
+
+<p>如下是Linux Kernel中使用的atomic_add函数的定义，它实现原子的给v指向的atomic_t增加i的功能。
+``` c atomic_add
+static inline void atomic_add(int i, atomic_t *v)
+{</p>
+
+<pre><code>    unsigned long tmp;
+    int result;
+
+    __asm__ __volatile__("@ atomic_add\n"
+</code></pre>
+
+<p>&ldquo;1:     ldrex   %0, [%3]\n&rdquo;
+&ldquo;       add     %0, %0, %4\n&rdquo;
+&ldquo;       strex   %1, %0, [%3]\n&rdquo;
+&ldquo;       teq     %1, #0\n&rdquo;
+&ldquo;       bne     1b&rdquo;</p>
+
+<pre><code>    : "=&amp;r" (result), "=&amp;r" (tmp), "+Qo" (v-&gt;counter)
+    : "r" (&amp;v-&gt;counter), "Ir" (i)
+    : "cc");
+</code></pre>
+
+<p>}
+```
+在第7行，使用LDREX指令将v->counter所指向的内存地址的值装入寄存器中，并初始化exclusive monitor。
+在第8行，将该寄存器中的值与i相加。
+在第9，10，11行，使用STREX指令尝试将修改后的值存入原来的地址，如果STREX写入%1寄存器的值为0，则认为原子更新成功，函数返回；如果%1寄存器的值不为0，则认为exclusive monitor拒绝了本次对内存地址的访问，则跳转回第7行重新进行以上所述的过程，直到成功将修改后的值写入内存为止。该过程可能多次反复进行，但可以保证，在最后一次的读-修改-写回的过程中，没有其他代码访问该内存地址。</p>
+
+<h3>GCC内置的原子操作函数</h3>
+
+<p>看了上面的GCC内联汇编，是不是有点晕？在用户态下，GCC为我们提供了一系列内置函数，这些函数可以让我们既享受原子操作的好处，又免于编写复杂的内联汇编指令。这一系列的函数均以__sync开头，分为如下几类：
+<code>c
+type __sync_fetch_and_add (type *ptr, type value, ...)
+type __sync_fetch_and_sub (type *ptr, type value, ...)
+type __sync_fetch_and_or (type *ptr, type value, ...)
+type __sync_fetch_and_and (type *ptr, type value, ...)
+type __sync_fetch_and_xor (type *ptr, type value, ...)
+type __sync_fetch_and_nand (type *ptr, type value, ...)
+</code>
+这一系列函数完成对ptr所指向的内存地址的对应操作，并返回操作之前的值。
+<code>c
+type __sync_add_and_fetch (type *ptr, type value, ...)
+type __sync_sub_and_fetch (type *ptr, type value, ...)
+type __sync_or_and_fetch (type *ptr, type value, ...)
+type __sync_and_and_fetch (type *ptr, type value, ...)
+type __sync_xor_and_fetch (type *ptr, type value, ...)
+type __sync_nand_and_fetch (type *ptr, type value, ...)
+</code>
+这一系列函数完成对ptr所指向的内存地址的对应操作，并返回操作之后的值。
+<code>c
+bool __sync_bool_compare_and_swap (type *ptr, type oldval, type newval, ...)
+type __sync_val_compare_and_swap (type *ptr, type oldval, type newval, ...)
+</code>
+这两个函数完成对变量的原子比较和交换。即如果ptr所指向的内存地址存放的值与oldval相同的话，则将其用newval的值替换。
+返回bool类型的函数返回比较的结果，相同为true，不同为false；返回type的函数返回的是ptr指向地址交换前存放的值。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[ARM体系架构下的同步操作（一）]]></title>
+    <link href="http://blog.hamobai.com/blog/2012/06/28/synchronization-on-ARM-one/"/>
+    <updated>2012-06-28T18:23:00+08:00</updated>
+    <id>http://blog.hamobai.com/blog/2012/06/28/synchronization-on-ARM-one</id>
+    <content type="html"><![CDATA[<p>处理器在访问共享资源时，必须对临界区进行同步，即保证同一时间内，只有一个对临界区的访问者。当共享资源为一内存地址时，原子操作是对该类型共享资源同步访问的最佳方式。随着应用的日益复杂和SMP的广泛使用，处理器都开始提供硬件同步原语以支持原子地更新内存地址。</p>
+
+<p>CISC处理器比如IA32，可以提供单独的多种原子指令完成复杂的原子操作，由处理器保证读-修改-写回过程的原子性。而RISC则不同，由于除Load和Store的所有操作都必须在寄存器中完成，如何保证从装载内存地址到寄存器，到修改寄存器中的值，再到将寄存器中的值写回内存中可以原子性的完成，便成为了处理器设计的关键。</p>
+
+<p>从ARMv6架构开始，ARM处理器提供了Exclusive accesses同步原语，包含两条指令：</p>
+
+<pre><code>LDREX
+STREX
+</code></pre>
+
+<p>LDREX和STREX指令，将对一个内存地址的原子操作拆分成两个步骤，同处理器内置的记录exclusive accesses的exclusive monitors一起，完成对内存的原子操作。</p>
+
+<h3>LDREX</h3>
+
+<p>LDREX与LDR指令类似，完成将内存中的数据加载进寄存器的操作。与LDR指令不同的是，该指令也会同时初始化exclusive monitor来记录对该地址的同步访问。例如
+<code>gas
+LDREX R1, [R0]
+</code>
+会将R0寄存器中内存地址的数据，加载进R1中并更新exclusive monitor。</p>
+
+<h3>STREX</h3>
+
+<p>该指令的格式为：
+<code>gas
+STREX Rd, Rm, [Rn]
+</code>
+STREX会根据exclusive monitor的指示决定是否将寄存器中的值写回内存中。如果exclusive monitor许可这次写入，则STREX会将寄存器Rm的值写回Rn所存储的内存地址中，并将Rd寄存器设置为0表示操作成功。如果exclusive monitor禁止这次写入，则STREX指令会将Rd寄存器的值设置为1表示操作失败并放弃这次写入。应用程序可以根据Rd中的值来判断写回是否成功。</p>
+
+<p>在下篇文章中，我会以Linux Kernel中如何编写原子操作代码具体介绍LDREX和STREX的使用方法，并介绍gcc提供的ARM架构下的关于这两条指令的C语言扩展。</p>
+]]></content>
+  </entry>
+  
+</feed>
