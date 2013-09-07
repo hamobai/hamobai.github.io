@@ -1,8 +1,15 @@
 require 'bundler/setup'
 require 'sinatra/base'
+require 'rack/rewrite'
 
 # The project root directory
 $root = ::File.dirname(__FILE__)
+
+use Rack::Rewrite do
+  r301 %r{.*}, 'http://blog.hamobai.com$&', :if => Proc.new {|rack_env|
+    rack_env['SERVER_NAME'] != 'blog.hamobai.com' and rack_env['SERVER_NAME'] != '127.0.0.1' and rack_env['SERVER_NAME'] != 'localhost'
+  }
+end
 
 class SinatraStaticServer < Sinatra::Base
 
