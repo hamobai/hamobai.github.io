@@ -2,9 +2,9 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: ARM | Hamo's]]></title>
-  <link href="http://blog.hamobai.com/blog/categories/arm/atom.xml" rel="self"/>
+  <link href="http://blog.hamobai.com/categories/arm/atom.xml" rel="self"/>
   <link href="http://blog.hamobai.com/"/>
-  <updated>2013-09-08T12:38:31+08:00</updated>
+  <updated>2013-09-27T23:22:58+08:00</updated>
   <id>http://blog.hamobai.com/</id>
   <author>
     <name><![CDATA[Yang Bai]]></name>
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[ARM体系架构下的同步操作（二）]]></title>
-    <link href="http://blog.hamobai.com/blog/2012/06/29/synchronization-on-ARM-two/"/>
+    <link href="http://blog.hamobai.com/2012/06/29/synchronization-on-ARM-two/"/>
     <updated>2012-06-29T12:31:00+08:00</updated>
-    <id>http://blog.hamobai.com/blog/2012/06/29/synchronization-on-ARM-two</id>
+    <id>http://blog.hamobai.com/2012/06/29/synchronization-on-ARM-two</id>
     <content type="html"><![CDATA[<p>在<a href="/2012/06/28/synchronization-on-ARM-one" title="ARM体系架构下的同步操作（一）">上一篇文章</a>中，我们介绍了ARM体系架构下，为了实现对内存地址同步访问而引入的</p>
 
 <pre><code>LDREX
@@ -88,9 +88,9 @@ type __sync_val_compare_and_swap (type *ptr, type oldval, type newval, ...)
   
   <entry>
     <title type="html"><![CDATA[ARM体系架构下的同步操作（一）]]></title>
-    <link href="http://blog.hamobai.com/blog/2012/06/28/synchronization-on-ARM-one/"/>
+    <link href="http://blog.hamobai.com/2012/06/28/synchronization-on-ARM-one/"/>
     <updated>2012-06-28T18:23:00+08:00</updated>
-    <id>http://blog.hamobai.com/blog/2012/06/28/synchronization-on-ARM-one</id>
+    <id>http://blog.hamobai.com/2012/06/28/synchronization-on-ARM-one</id>
     <content type="html"><![CDATA[<p>处理器在访问共享资源时，必须对临界区进行同步，即保证同一时间内，只有一个对临界区的访问者。当共享资源为一内存地址时，原子操作是对该类型共享资源同步访问的最佳方式。随着应用的日益复杂和SMP的广泛使用，处理器都开始提供硬件同步原语以支持原子地更新内存地址。</p>
 
 <p>CISC处理器比如IA32，可以提供单独的多种原子指令完成复杂的原子操作，由处理器保证读-修改-写回过程的原子性。而RISC则不同，由于除Load和Store的所有操作都必须在寄存器中完成，如何保证从装载内存地址到寄存器，到修改寄存器中的值，再到将寄存器中的值写回内存中可以原子性的完成，便成为了处理器设计的关键。</p>

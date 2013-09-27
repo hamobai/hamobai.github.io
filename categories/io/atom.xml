@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: kernel | Hamo's]]></title>
-  <link href="http://blog.hamobai.com/blog/categories/kernel/atom.xml" rel="self"/>
+  <title><![CDATA[Category: IO | Hamo's]]></title>
+  <link href="http://blog.hamobai.com/categories/io/atom.xml" rel="self"/>
   <link href="http://blog.hamobai.com/"/>
-  <updated>2013-09-08T12:38:31+08:00</updated>
+  <updated>2013-09-27T23:22:58+08:00</updated>
   <id>http://blog.hamobai.com/</id>
   <author>
     <name><![CDATA[Yang Bai]]></name>
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Linux内核中的IO调度器简介]]></title>
-    <link href="http://blog.hamobai.com/blog/2012/07/03/IO-scheduler-in-Linux-kernel/"/>
+    <link href="http://blog.hamobai.com/2012/07/03/IO-scheduler-in-Linux-kernel/"/>
     <updated>2012-07-03T13:45:00+08:00</updated>
-    <id>http://blog.hamobai.com/blog/2012/07/03/IO-scheduler-in-Linux-kernel</id>
+    <id>http://blog.hamobai.com/2012/07/03/IO-scheduler-in-Linux-kernel</id>
     <content type="html"><![CDATA[<p>从2.6系列开始，Linux内核引入了全新的IO调度子系统。与2.4系列内核只有一个惟一的，通用的I/O调度器相比，最新的Linux内核提供了CFQ(默认), deadline和noop三种IO调度器。（anticipatory调度器从2.6.33开始被移除，<a href="http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=492af6350a5ccf087e4964104a276ed358811458">commit 492af6350a5ccf087e4964104a276ed358811458</a>，被CFQ所取代）。在这篇文章里，我会首先介绍三种IO调度器各自的特点和应用场景，之后会介绍Linux内核提供的为每一个块设备指定IO调度器和调整IO调度器参数的接口。Ok, let&rsquo;s go!</p>
 
 <h3>CFQ(Complete Fair Queuing)</h3>
