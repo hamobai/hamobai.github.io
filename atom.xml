@@ -4,7 +4,7 @@
   <title><![CDATA[Hamo's]]></title>
   <link href="http://blog.hamobai.com/atom.xml" rel="self"/>
   <link href="http://blog.hamobai.com/"/>
-  <updated>2013-09-27T23:22:58+08:00</updated>
+  <updated>2014-08-29T14:48:05+08:00</updated>
   <id>http://blog.hamobai.com/</id>
   <author>
     <name><![CDATA[Yang Bai]]></name>
@@ -22,12 +22,9 @@
 
 <h3>CFQ(Complete Fair Queuing)</h3>
 
-<p>CFQ实现了一种QoS的IO调度算法。该算法为每一个进程分配一个时间窗口，在该时间窗口内，允许进程发射IO请求。通过时间窗口在不同进程间的移动，保证了对于所有进程而言都有公平的发射IO请求的权利。同时，与CFS(Complete Fair Schedule)相同，该算法也实现了进程的优先级控制，可以保证高优先级进程可以获得更长的时间窗口。主要代码位于</p>
-
-<pre><code>block/cfq-iosched.c
-</code></pre>
-
-<p>CFQ调度算法适用于系统中存在多任务I/O请求的情况，通过在多进程中轮换，保证了系统I/O请求整体的低延迟。但是，对于只有少数进程存在大量密集的I/O请求的情况，则会出现明显的I/O性能下降。</p>
+<p>CFQ实现了一种QoS的IO调度算法。该算法为每一个进程分配一个时间窗口，在该时间窗口内，允许进程发射IO请求。通过时间窗口在不同进程间的移动，保证了对于所有进程而言都有公平的发射IO请求的权利。同时，与CFS(Complete Fair Schedule)相同，该算法也实现了进程的优先级控制，可以保证高优先级进程可以获得更长的时间窗口。主要代码位于
+    block/cfq-iosched.c
+CFQ调度算法适用于系统中存在多任务I/O请求的情况，通过在多进程中轮换，保证了系统I/O请求整体的低延迟。但是，对于只有少数进程存在大量密集的I/O请求的情况，则会出现明显的I/O性能下降。</p>
 
 <p>CFQ调度器主要提供如下三个优化参数：</p>
 
@@ -54,21 +51,15 @@
 
 <h3>NOOP</h3>
 
-<p>顾名思义，NOOP调度器并不完成任何复杂的工作，只是将上层发来的I/O请求直接发送至下层，实现了一个FIFO的I/O请求队列。主要代码位于</p>
-
-<pre><code>block/noop-iosched.c
-</code></pre>
-
-<p>其应用环境主要有以下两种：一是物理设备包含自己的I/O调度程序，比如SCSI的TCQ；二是寻道时间可以忽略不计的设备，比如SSD等。</p>
+<p>顾名思义，NOOP调度器并不完成任何复杂的工作，只是将上层发来的I/O请求直接发送至下层，实现了一个FIFO的I/O请求队列。主要代码位于
+    block/noop-iosched.c
+其应用环境主要有以下两种：一是物理设备包含自己的I/O调度程序，比如SCSI的TCQ；二是寻道时间可以忽略不计的设备，比如SSD等。</p>
 
 <h3>DEADLINE</h3>
 
-<p>DEADLINE调度算法主要针对I/O请求的延时而设计，每个I/O请求都被附加一个最后执行期限。该算法维护两类队列，一是按照扇区排序的读写请求队列；二是按照过期时间排序的读写请求队列。如果当前没有I/O请求过期，则会按照扇区顺序执行I/O请求；如果发现过期的I/O请求，则会处理按照过期时间排序的队列，直到所有过期请求都被发射为止。在处理请求时，该算法会优先考虑读请求。主要代码位于</p>
-
-<pre><code>block/deadline-iosched.c
-</code></pre>
-
-<p>当系统中存在的I/O请求进程比较少时，与CFQ算法相比，DEADLINE算法可以提供较高的I/O吞吐率，特别是对于使用了自带I/O请求队列的设备，如SCSI的TCQ的时候。</p>
+<p>DEADLINE调度算法主要针对I/O请求的延时而设计，每个I/O请求都被附加一个最后执行期限。该算法维护两类队列，一是按照扇区排序的读写请求队列；二是按照过期时间排序的读写请求队列。如果当前没有I/O请求过期，则会按照扇区顺序执行I/O请求；如果发现过期的I/O请求，则会处理按照过期时间排序的队列，直到所有过期请求都被发射为止。在处理请求时，该算法会优先考虑读请求。主要代码位于
+    block/deadline-iosched.c
+当系统中存在的I/O请求进程比较少时，与CFQ算法相比，DEADLINE算法可以提供较高的I/O吞吐率，特别是对于使用了自带I/O请求队列的设备，如SCSI的TCQ的时候。</p>
 
 <p>DEADLINE调度算法提供如下三个参数：</p>
 
@@ -117,17 +108,11 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>当然，这里的修改是临时的。系统重启后设备的调度算法会重置为默认的CFQ。如果希望保证每次系统启动都使用自定的调度算法，可以在</p>
-
-<pre><code>/etc/fstab
-</code></pre>
-
-<p>文件中为对应的设备传递如下参数：</p>
-
-<pre><code>elevator=deadline
-</code></pre>
-
-<p>便会将对应设备的调度算法设置为deadline，其他算法类似。</p>
+<p>当然，这里的修改是临时的。系统重启后设备的调度算法会重置为默认的CFQ。如果希望保证每次系统启动都使用自定的调度算法，可以在
+    /etc/fstab
+文件中为对应的设备传递如下参数：
+    elevator=deadline
+便会将对应设备的调度算法设置为deadline，其他算法类似。</p>
 ]]></content>
   </entry>
   
@@ -136,13 +121,10 @@
     <link href="http://blog.hamobai.com/2012/06/29/synchronization-on-ARM-two/"/>
     <updated>2012-06-29T12:31:00+08:00</updated>
     <id>http://blog.hamobai.com/2012/06/29/synchronization-on-ARM-two</id>
-    <content type="html"><![CDATA[<p>在<a href="http://blog.hamobai.com/2012/06/28/synchronization-on-ARM-one" title="ARM体系架构下的同步操作（一）">上一篇文章</a>中，我们介绍了ARM体系架构下，为了实现对内存地址同步访问而引入的</p>
-
-<pre><code>LDREX
-STREX
-</code></pre>
-
-<p>两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构的原子相加操作为例，介绍这两条指令的使用方法；之后，会介绍GCC提供的一些内置函数，这些同步函数使用这两条指令完成同步操作。</p>
+    <content type="html"><![CDATA[<p>在<a href="http://blog.hamobai.com/2012/06/28/synchronization-on-ARM-one" title="ARM体系架构下的同步操作（一）">上一篇文章</a>中，我们介绍了ARM体系架构下，为了实现对内存地址同步访问而引入的
+    LDREX
+    STREX
+两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构的原子相加操作为例，介绍这两条指令的使用方法；之后，会介绍GCC提供的一些内置函数，这些同步函数使用这两条指令完成同步操作。</p>
 
 <h3>Linux Kernel中的atomic_add函数</h3>
 
@@ -163,7 +145,7 @@ STREX
 <span class='line-number'>13</span>
 <span class='line-number'>14</span>
 <span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">static</span> <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">atomic_add</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">atomic_t</span> <span class="o">*</span><span class="n">v</span><span class="p">)</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">static</span> <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">atomic_add</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="kt">atomic_t</span> <span class="o">*</span><span class="n">v</span><span class="p">)</span>
 </span><span class='line'><span class="p">{</span>
 </span><span class='line'>        <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">tmp</span><span class="p">;</span>
 </span><span class='line'>        <span class="kt">int</span> <span class="n">result</span><span class="p">;</span>
@@ -225,7 +207,7 @@ STREX
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">bool</span> <span class="n">__sync_bool_compare_and_swap</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">oldval</span><span class="p">,</span> <span class="n">type</span> <span class="n">newval</span><span class="p">,</span> <span class="p">...)</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="kt">bool</span> <span class="n">__sync_bool_compare_and_swap</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">oldval</span><span class="p">,</span> <span class="n">type</span> <span class="n">newval</span><span class="p">,</span> <span class="p">...)</span>
 </span><span class='line'><span class="n">type</span> <span class="n">__sync_val_compare_and_swap</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">oldval</span><span class="p">,</span> <span class="n">type</span> <span class="n">newval</span><span class="p">,</span> <span class="p">...)</span>
 </span></code></pre></td></tr></table></div></figure>
 
@@ -244,13 +226,10 @@ STREX
 
 <p>CISC处理器比如IA32，可以提供单独的多种原子指令完成复杂的原子操作，由处理器保证读-修改-写回过程的原子性。而RISC则不同，由于除Load和Store的所有操作都必须在寄存器中完成，如何保证从装载内存地址到寄存器，到修改寄存器中的值，再到将寄存器中的值写回内存中可以原子性的完成，便成为了处理器设计的关键。</p>
 
-<p>从ARMv6架构开始，ARM处理器提供了Exclusive accesses同步原语，包含两条指令：</p>
-
-<pre><code>LDREX
-STREX
-</code></pre>
-
-<p>LDREX和STREX指令，将对一个内存地址的原子操作拆分成两个步骤，同处理器内置的记录exclusive accesses的exclusive monitors一起，完成对内存的原子操作。</p>
+<p>从ARMv6架构开始，ARM处理器提供了Exclusive accesses同步原语，包含两条指令：
+    LDREX
+    STREX
+LDREX和STREX指令，将对一个内存地址的原子操作拆分成两个步骤，同处理器内置的记录exclusive accesses的exclusive monitors一起，完成对内存的原子操作。</p>
 
 <h3>LDREX</h3>
 

@@ -9,8 +9,8 @@
   <meta name="author" content="Yang Bai">
 
   
-  <meta name="description" content="在上一篇文章中，我们介绍了ARM体系架构下，为了实现对内存地址同步访问而引入的 LDREX
-STREX 两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构的原子相加操作为例，介绍这两条指令的使用方法；之后，会介绍GCC提供的一些内置函数，这些同步函数使用这两条指令完成同步操作。 &hellip;">
+  <meta name="description" content="在上一篇文章中，我们介绍了ARM体系架构下，为了实现对内存地址同步访问而引入的 LDREX STREX
+两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构的原子相加操作为例，介绍这两条指令的使用方法；之后，会介绍GCC提供的一些内置函数，这些同步函数使用这两条指令完成同步操作。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -25,7 +25,7 @@ STREX 两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构�
   <link href="/atom.xml" rel="alternate" title="Hamo's" type="application/atom+xml">
   <script src="/javascripts/modernizr-2.0.js"></script>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
   <script src="/javascripts/octopress.js" type="text/javascript"></script>
   <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
@@ -61,7 +61,7 @@ STREX 两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构�
   
 </ul>
   
-<form action="http://google.com/search" method="get">
+<form action="https://www.google.com/search" method="get">
   <fieldset role="search">
     <input type="hidden" name="q" value="site:blog.hamobai.com" />
     <input class="search" type="text" name="q" results="0" placeholder="Search"/>
@@ -90,35 +90,26 @@ STREX 两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构�
 
 
 
-
-
-
-
-  
-
-
-<time datetime="2012-06-29T12:31:00+08:00" pubdate data-updated="true">Jun 29<span>th</span>, 2012</time>
+<time class='entry-date' datetime='2012-06-29T12:31:00+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2012</span></span> <span class='time'>12:31 pm</span></time>
         
-         | <a href="#disqus_thread">Comments</a>
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://blog.hamobai.com">Comments</a>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>在<a href="/2012/06/28/synchronization-on-ARM-one" title="ARM体系架构下的同步操作（一）">上一篇文章</a>中，我们介绍了ARM体系架构下，为了实现对内存地址同步访问而引入的</p>
-
-<pre><code>LDREX
-STREX
-</code></pre>
-
-<p>两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构的原子相加操作为例，介绍这两条指令的使用方法；之后，会介绍GCC提供的一些内置函数，这些同步函数使用这两条指令完成同步操作。</p>
+<div class="entry-content"><p>在<a href="/2012/06/28/synchronization-on-ARM-one" title="ARM体系架构下的同步操作（一）">上一篇文章</a>中，我们介绍了ARM体系架构下，为了实现对内存地址同步访问而引入的
+    LDREX
+    STREX
+两条指令。在这篇文章里，首先会以Linux Kernel中ARM架构的原子相加操作为例，介绍这两条指令的使用方法；之后，会介绍GCC提供的一些内置函数，这些同步函数使用这两条指令完成同步操作。</p>
 
 <h3>Linux Kernel中的atomic_add函数</h3>
 
 <p>如下是Linux Kernel中使用的atomic_add函数的定义，它实现原子的给v指向的atomic_t增加i的功能。</p>
 
-<figure class='code'><figcaption><span>atomic_add</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>atomic_add</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -133,7 +124,7 @@ STREX
 <span class='line-number'>13</span>
 <span class='line-number'>14</span>
 <span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">static</span> <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">atomic_add</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">atomic_t</span> <span class="o">*</span><span class="n">v</span><span class="p">)</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">static</span> <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">atomic_add</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="kt">atomic_t</span> <span class="o">*</span><span class="n">v</span><span class="p">)</span>
 </span><span class='line'><span class="p">{</span>
 </span><span class='line'>        <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">tmp</span><span class="p">;</span>
 </span><span class='line'>        <span class="kt">int</span> <span class="n">result</span><span class="p">;</span>
@@ -148,7 +139,7 @@ STREX
 </span><span class='line'>        <span class="o">:</span> <span class="s">&quot;r&quot;</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">v</span><span class="o">-&gt;</span><span class="n">counter</span><span class="p">),</span> <span class="s">&quot;Ir&quot;</span> <span class="p">(</span><span class="n">i</span><span class="p">)</span>
 </span><span class='line'>        <span class="o">:</span> <span class="s">&quot;cc&quot;</span><span class="p">);</span>
 </span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>在第7行，使用LDREX指令将v->counter所指向的内存地址的值装入寄存器中，并初始化exclusive monitor。
@@ -159,7 +150,7 @@ STREX
 
 <p>看了上面的GCC内联汇编，是不是有点晕？在用户态下，GCC为我们提供了一系列内置函数，这些函数可以让我们既享受原子操作的好处，又免于编写复杂的内联汇编指令。这一系列的函数均以__sync开头，分为如下几类：</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -171,12 +162,12 @@ STREX
 </span><span class='line'><span class="n">type</span> <span class="n">__sync_fetch_and_and</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
 </span><span class='line'><span class="n">type</span> <span class="n">__sync_fetch_and_xor</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
 </span><span class='line'><span class="n">type</span> <span class="n">__sync_fetch_and_nand</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>这一系列函数完成对ptr所指向的内存地址的对应操作，并返回操作之前的值。</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -188,16 +179,16 @@ STREX
 </span><span class='line'><span class="n">type</span> <span class="n">__sync_and_and_fetch</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
 </span><span class='line'><span class="n">type</span> <span class="n">__sync_xor_and_fetch</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
 </span><span class='line'><span class="n">type</span> <span class="n">__sync_nand_and_fetch</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">value</span><span class="p">,</span> <span class="p">...)</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>这一系列函数完成对ptr所指向的内存地址的对应操作，并返回操作之后的值。</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">bool</span> <span class="n">__sync_bool_compare_and_swap</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">oldval</span><span class="p">,</span> <span class="n">type</span> <span class="n">newval</span><span class="p">,</span> <span class="p">...)</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="kt">bool</span> <span class="n">__sync_bool_compare_and_swap</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">oldval</span><span class="p">,</span> <span class="n">type</span> <span class="n">newval</span><span class="p">,</span> <span class="p">...)</span>
 </span><span class='line'><span class="n">type</span> <span class="n">__sync_val_compare_and_swap</span> <span class="p">(</span><span class="n">type</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="n">type</span> <span class="n">oldval</span><span class="p">,</span> <span class="n">type</span> <span class="n">newval</span><span class="p">,</span> <span class="p">...)</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>这两个函数完成对变量的原子比较和交换。即如果ptr所指向的内存地址存放的值与oldval相同的话，则将其用newval的值替换。
@@ -217,19 +208,12 @@ STREX
 
 
 
-
-
-
-
-  
-
-
-<time datetime="2012-06-29T12:31:00+08:00" pubdate data-updated="true">Jun 29<span>th</span>, 2012</time>
+<time class='entry-date' datetime='2012-06-29T12:31:00+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2012</span></span> <span class='time'>12:31 pm</span></time>
       
 
 <span class="categories">
   
-    <a class='category' href='/categories/arm/'>ARM</a>
+    <a class='category' href='/categories/arm/'>arm</a>
   
 </span>
 
@@ -335,7 +319,7 @@ STREX
     </div>
   </div>
   <footer role="contentinfo"><p>
-  Copyright &copy; 2013 - Yang Bai -
+  Copyright &copy; 2014 - Yang Bai -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 
@@ -353,7 +337,7 @@ STREX
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
       (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
     }());
 </script>

@@ -1,27 +1,39 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
-    <url>
-        <loc>http://blog.hamobai.com/2012/06/28/synchronization-on-ARM-one/</loc>
-        <lastmod>2013-09-27T22:55:44+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://blog.hamobai.com/2012/06/29/synchronization-on-ARM-two/</loc>
-        <lastmod>2013-09-27T22:55:44+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://blog.hamobai.com/2012/07/03/IO-scheduler-in-Linux-kernel/</loc>
-        <lastmod>2013-09-27T22:55:44+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://blog.hamobai.com/</loc>
-        <lastmod>2013-09-27T22:55:44+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://blog.hamobai.com/robots.txt</loc>
-        <lastmod>2013-09-27T22:55:44+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://blog.hamobai.com/archives/</loc>
-        <lastmod>2013-09-27T22:55:44+08:00</lastmod>
-    </url>
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  
+  <url>
+    <loc>http://blog.hamobai.com/2012/07/03/IO-scheduler-in-Linux-kernel/</loc>
+    <lastmod>2012-07-03T13:45:00+08:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>http://blog.hamobai.com/2012/06/29/synchronization-on-ARM-two/</loc>
+    <lastmod>2012-06-29T12:31:00+08:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
+    <loc>http://blog.hamobai.com/2012/06/28/synchronization-on-ARM-one/</loc>
+    <lastmod>2012-06-28T18:23:00+08:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  
+  <url>
+    <loc>http://blog.hamobai.com/</loc>
+    <lastmod>2014-08-29T14:48:05+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <url>
+    <loc>http://blog.hamobai.com/archives/</loc>
+    <lastmod>2014-08-29T14:48:05+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  
 </urlset>
