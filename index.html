@@ -9,7 +9,9 @@
   <meta name="author" content="Yang Bai">
 
   
-  <meta name="description" content="从2.6系列开始，Linux内核引入了全新的IO调度子系统。与2.4系列内核只有一个惟一的，通用的I/O调度器相比，最新的Linux内核提供了CFQ(默认), deadline和noop三种IO调度器。（anticipatory调度器从2.6.33开始被移除，commit &hellip;">
+  <meta name="description" content="Docker是一款由docker, Inc发起的开源Linux容器引擎。由Golang编写完成。它
+基于Linux Container技术。Linux Container技术，是一种操作系统层次的虚拟
+化技术，提供了系统隔离，资源限制等功能。与Linux下传统的KVM虚拟机相比， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -77,6 +79,53 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/2014/08/29/docker-analysis-1/">Docker源码分析1-简介</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-08-29T17:31:00+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>5:31 pm</span></time>
+        
+           | <a href="/2014/08/29/docker-analysis-1/#disqus_thread"
+             data-disqus-identifier="http://blog.hamobai.com/2014/08/29/docker-analysis-1/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Docker是一款由docker, Inc发起的开源Linux容器引擎。由Golang编写完成。它
+基于Linux Container技术。Linux Container技术，是一种操作系统层次的虚拟
+化技术，提供了系统隔离，资源限制等功能。与Linux下传统的KVM虚拟机相比，
+container技术更轻量，所有容器运行在Host的内核上，共享Host的硬件资源。</p>
+
+<p>由于Docker依赖于Linux Container技术，所以现在只能运行在Linux系统上。为
+了解决这个问题，
+<a href="https://github.com/boot2docker/boot2docker">boot2docker</a>项目应运而生。
+该项目为Windows和Mac OS的用户提供了一个包含Docker的最小化的Virtualbox
+虚拟机镜像，借助Virtualbox虚拟机让Docker运行在这两种操作系统上。</p>
+
+<p>本系列的Docker源码分析将基于Docker v1.2.0版本进行。读者可以从Docker项
+目在github的<a href="https://github.com/dotcloud/docker">页面</a>获取到该项目的源
+代码。</p>
+
+<p>下一期，我们将首先对Docker daemon的启动代码进行分析。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -415,6 +464,10 @@ LDREX和STREX指令，将对一个内存地址的原子操作拆分成两个步�
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/2014/08/29/docker-analysis-1/">Docker源码分析1-简介</a>
+      </li>
     
       <li class="post">
         <a href="/2012/07/03/IO-scheduler-in-Linux-kernel/">Linux内核中的IO调度器简介</a>
