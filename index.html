@@ -9,9 +9,11 @@
   <meta name="author" content="Yang Bai">
 
   
-  <meta name="description" content="Docker是一款由docker, Inc发起的开源Linux容器引擎。由Golang编写完成。它
-基于Linux Container技术。Linux Container技术，是一种操作系统层次的虚拟
-化技术，提供了系统隔离，资源限制等功能。与Linux下传统的KVM虚拟机相比， &hellip;">
+  <meta name="description" content="在该系列的
+上一篇文章中，
+我们简单介绍了Docker的基本信息。在这篇文章中，我们将详细分析Docker
+daemon的启动代码。从这篇文章开始，我将用$SRC指代Docker源码所在的
+目录。 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -85,6 +87,47 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/2014/08/31/docker-analysis-2/">Docker源码分析2-daemon启动</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-08-31T12:30:00+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>31</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>12:30 pm</span></time>
+        
+           | <a href="/2014/08/31/docker-analysis-2/#disqus_thread"
+             data-disqus-identifier="http://blog.hamobai.com/2014/08/31/docker-analysis-2/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在该系列的
+<a href="http://blog.hamobai.com/2014/08/29/docker-analysis-1/">上一篇文章</a>中，
+我们简单介绍了Docker的基本信息。在这篇文章中，我们将详细分析Docker
+daemon的启动代码。从这篇文章开始，我将用<code>$SRC</code>指代Docker源码所在的
+目录。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/2014/08/31/docker-analysis-2/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/2014/08/29/docker-analysis-1/">Docker源码分析1-简介</a></h1>
     
     
@@ -119,7 +162,7 @@ container技术更轻量，所有容器运行在Host的内核上，共享Host的
 目在github的<a href="https://github.com/dotcloud/docker">页面</a>获取到该项目的源
 代码。</p>
 
-<p>下一期，我们将首先对Docker daemon的启动代码进行分析。</p>
+<p><a href="http://blog.hamobai.com/2014/08/30/docker-analysis-2/">下一篇</a>，我们将首先对Docker daemon的启动代码进行分析。</p>
 </div>
   
   
@@ -464,6 +507,10 @@ LDREX和STREX指令，将对一个内存地址的原子操作拆分成两个步�
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/2014/08/31/docker-analysis-2/">Docker源码分析2-daemon启动</a>
+      </li>
     
       <li class="post">
         <a href="/2014/08/29/docker-analysis-1/">Docker源码分析1-简介</a>

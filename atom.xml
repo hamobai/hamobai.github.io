@@ -4,7 +4,7 @@
   <title><![CDATA[Hamo's]]></title>
   <link href="http://blog.hamobai.com/atom.xml" rel="self"/>
   <link href="http://blog.hamobai.com/"/>
-  <updated>2014-08-29T18:56:19+08:00</updated>
+  <updated>2014-08-31T19:32:12+08:00</updated>
   <id>http://blog.hamobai.com/</id>
   <author>
     <name><![CDATA[Yang Bai]]></name>
@@ -12,6 +12,94 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Docker源码分析2-daemon启动]]></title>
+    <link href="http://blog.hamobai.com/2014/08/31/docker-analysis-2/"/>
+    <updated>2014-08-31T12:30:00+08:00</updated>
+    <id>http://blog.hamobai.com/2014/08/31/docker-analysis-2</id>
+    <content type="html"><![CDATA[<p>在该系列的
+<a href="http://blog.hamobai.com/2014/08/29/docker-analysis-1/">上一篇文章</a>中，
+我们简单介绍了Docker的基本信息。在这篇文章中，我们将详细分析Docker
+daemon的启动代码。从这篇文章开始，我将用<code>$SRC</code>指代Docker源码所在的
+目录。</p>
+
+<!--more-->
+
+
+<h3>启动入口</h3>
+
+<p>Docker的启动入口位于<code>$SRC/docker</code>目录，在分析代码之前，先介绍Golang的一个小知识。Golang的每一个package，都可以有零个，一个或者多个<code>func init()</code>，多个init函数会按照它们在源文件中出现的顺序被执行。除<code>main</code>pakcage外，init函数在package被import的时候执行；而对于<code>main</code>pakcage，其<code>func init()</code>将在程序启动时，先于<code>func main()</code>被执行。[1]</p>
+
+<p> <code>$SRC/docker</code>目录下共有4个文件，<code>flags.go</code> <code>docker.go</code>
+ <code>daemon.go</code>以及<code>client.go</code>。</p>
+
+<p> <code>flags.go</code>包含对于daemon和client都生效的命令行参数。主要是设定
+client与daemon之间通讯方式相关的参数。当然，决定该次<code>docker</code>作为
+client还是daemon运行的<code>-d</code>参数也在flags.go文件中被定义。具体如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">flDaemon</span>      <span class="p">=</span> <span class="nx">flag</span><span class="p">.</span><span class="nx">Bool</span><span class="p">([]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;d&quot;</span><span class="p">,</span> <span class="s">&quot;-daemon&quot;</span><span class="p">},</span> <span class="kc">false</span><span class="p">,</span> <span class="s">&quot;Enable daemon mode&quot;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样，当我们用参数<code>-d</code>或者<code>--daemon</code>调用<code>docker</code>时，
+ <code>flDaemon</code>会被置为<code>true</code>（默认值为<code>false</code>），从而影响后序
+ 代码的执行。
+ 这里要注意的是，Golang的flag对所有参数都是默认使用<code>-</code>指定的，所以
+ 绑定在<code>flDaemon</code>上的长参数，Docker选择了<code>-daemon</code>。这样，我们
+ 才可以按照Unix的惯例，使用<code>-</code>指定短参数，使用<code>--</code>指定长参数。</p>
+
+<p>接下来，执行会进入到真正的入口函数<code>func main()</code>，该函数位于
+ <code>$SRC/docker/docker.go</code>文件中。首先会被调用的是
+ <code>reexec.init()</code>，其作用是实现类似busybox的程序调用，即根据文件名
+ 决定程序的功能。这里暂且不表，有兴趣的同学可以自行研究<code>reexec</code>
+ package的源码，代码位于<code>$SRC/reexec</code>目录下。</p>
+
+<p>在完成对命令行参数使用<code>flag.Parse()</code>的解析后，首先会判断是否使用了
+ <code>-v</code>或<code>--version</code>参数，之后会根据<code>flDebug</code>的值设置
+ <code>DEBUG</code>环境变量，在Docker中，很多类似debug这样的全局设置都是通过
+ 环境变量传递的，这样做的好处是简化程序对该设置的处理，当需要修改或获
+ 取该项设置时，直接访问环境变量即可；坏处也显而易见，程序容易受到运行
+ 时已经定义的环境变量的影响。</p>
+
+<p>如果用户没有通过命令行参数指定daemon与client的连接方式，则会检查
+ <code>DOCKER_HOST</code>环境变量，如果环境变量也没有指定，则将unix
+ socket <code>unix:///var/run/docker.sock</code> 作为默认的连接方式压入
+ <code>flHosts</code>变量。之后，因为我们以<code>-d</code>或者<code>--daemon</code>参数启动
+ <code>docker</code>，<code>flDaemon</code>变量为<code>true</code>，我们会进入
+ <code>mainDaemon</code>函数进行daemon相关的动作。该函数位于
+ <code>$SRC/docker/daemon.go</code>。</p>
+
+<p>进入<code>daemon.go</code>，首先会利用之前提过的<code>init()</code>注册daemon所
+需要的flag，并通过引用其他package，调用各个package的<code>init()</code>函数。
+这里需要着重介绍的是如下代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kn">import</span> <span class="p">(</span>
+</span><span class='line'>  <span class="nx">_</span> <span class="s">&quot;github.com/docker/docker/daemon/execdriver/lxc&quot;</span>
+</span><span class='line'>  <span class="nx">_</span> <span class="s">&quot;github.com/docker/docker/daemon/execdriver/native&quot;</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在import package时，如果将包名重新定义为<code>_</code>，则该package无法在后面
+的代码中被调用（Golang不允许引用而不被调用的包存在）。引用一个包再将其
+重命名为<code>_</code>，其目的就是为了调用该包自己的<code>func init()</code>。比如这
+里，lxc和native就各自利用各自的<code>init</code>函数注册了一个reexec项，为
+<code>/.dockerinit</code>和<code>native</code>设置各自的动作。而具体以这两个名字作为
+文件名运行docker程序时会有什么不同，我们会在以后的章节中介绍。</p>
+
+<p>言归正传，在daemon的<code>init()</code>函数中注册的flag位于
+ <code>$SRC/daemon/config.go</code>，为了简单起见，接下来的分析都基于默认参数，
+ 有兴趣的同学可以自行研究一下daemon都支持那些参数，各自的含义是什么。</p>
+
+<p>[1]<a href="http://golang.org/ref/spec#Package_initialization">http://golang.org/ref/spec#Package_initialization</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Docker源码分析1-简介]]></title>
@@ -33,7 +121,7 @@ container技术更轻量，所有容器运行在Host的内核上，共享Host的
 目在github的<a href="https://github.com/dotcloud/docker">页面</a>获取到该项目的源
 代码。</p>
 
-<p>下一期，我们将首先对Docker daemon的启动代码进行分析。</p>
+<p><a href="http://blog.hamobai.com/2014/08/30/docker-analysis-2/">下一篇</a>，我们将首先对Docker daemon的启动代码进行分析。</p>
 ]]></content>
   </entry>
   
