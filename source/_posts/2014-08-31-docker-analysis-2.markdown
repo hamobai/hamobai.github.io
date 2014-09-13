@@ -7,7 +7,7 @@ categories: golang docker
 published: true
 ---
 在该系列的
-[上一篇文章](http://blog.hamobai.com/2014/08/29/docker-analysis-1/)中，
+[上一篇文章](http://blog.hamobai.com/2014/08/31/docker-analysis-1/)中，
 我们简单介绍了Docker的基本信息。在这篇文章中，我们将详细分析Docker
 daemon的启动代码。从这篇文章开始，我将用```$SRC```指代Docker源码所在的
 目录。

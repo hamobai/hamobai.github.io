@@ -7,7 +7,7 @@ categories: golang docker
 published: true
 ---
 在该系列的
-[上一篇文章](http://blog.hamobai.com/2014/08/29/docker-analysis-2/)中，
+[上一篇文章](http://blog.hamobai.com/2014/08/31/docker-analysis-2/)中，
  我们介绍了Docker daemon启动流程的前半部分，后半部分的代码会完成daemon
  启动中最重要的两个步骤：
 
