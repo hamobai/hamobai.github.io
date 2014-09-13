@@ -110,7 +110,7 @@ API可以接受新连接。这样即可加快启动的速度，同时也可以�
 接受API连接时，daemon处于就绪状态。
 
 我们将会在
-[下一篇文章](http://blog.hamobai.com/2014/08/29/docker-analysis-3/)中
+[下一篇文章](http://blog.hamobai.com/2014/09/12/docker-analysis-3/)中
 详细介绍daemon服务和RESTful API服务的启动过程。
 
 [1]http://golang.org/ref/spec#Package_initialization
