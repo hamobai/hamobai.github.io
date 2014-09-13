@@ -10,10 +10,8 @@
 
   
   <meta name="description" content="在该系列的
-上一篇文章中，
-我们简单介绍了Docker的基本信息。在这篇文章中，我们将详细分析Docker
-daemon的启动代码。从这篇文章开始，我将用$SRC指代Docker源码所在的
-目录。 ">
+上一篇文章中， 我们介绍了Docker daemon启动流程的前半部分，后半部分的代码会完成daemon 启动中最重要的两个步骤： Daemon结构的初始化
+API的初始化 在这篇文章中，我们将首先分析API初始化相关的代码，其利用Golang标准库 &ldquo;net/http&# &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -81,6 +79,55 @@ daemon的启动代码。从这篇文章开始，我将用$SRC指代Docker源码�
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/2014/09/12/docker-analysis-3/">Docker源码分析3-daemon启动（API）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-09-12T17:30:00+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>12</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>5:30 pm</span></time>
+        
+           | <a href="/2014/09/12/docker-analysis-3/#disqus_thread"
+             data-disqus-identifier="http://blog.hamobai.com/2014/09/12/docker-analysis-3/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在该系列的
+<a href="http://blog.hamobai.com/2014/08/29/docker-analysis-2/">上一篇文章</a>中，
+ 我们介绍了Docker daemon启动流程的前半部分，后半部分的代码会完成daemon
+ 启动中最重要的两个步骤：</p>
+
+<ul>
+<li>Daemon结构的初始化</li>
+<li>API的初始化</li>
+</ul>
+
+
+<p>在这篇文章中，我们将首先分析API初始化相关的代码，其利用Golang标准库
+ &ldquo;net/http&#8221;生成一个RESTful的HTTP接口与client通信。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/2014/09/12/docker-analysis-3/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -509,6 +556,10 @@ LDREX和STREX指令，将对一个内存地址的原子操作拆分成两个步�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/2014/09/12/docker-analysis-3/">Docker源码分析3-daemon启动（API）</a>
+      </li>
+    
+      <li class="post">
         <a href="/2014/08/31/docker-analysis-2/">Docker源码分析2-daemon启动</a>
       </li>
     
@@ -522,10 +573,6 @@ LDREX和STREX指令，将对一个内存地址的原子操作拆分成两个步�
     
       <li class="post">
         <a href="/2012/06/29/synchronization-on-ARM-two/">ARM体系架构下的同步操作（二）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/2012/06/28/synchronization-on-ARM-one/">ARM体系架构下的同步操作（一）</a>
       </li>
     
   </ul>
