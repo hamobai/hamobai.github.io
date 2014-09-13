@@ -4,7 +4,7 @@
   <title><![CDATA[Hamo's]]></title>
   <link href="http://blog.hamobai.com/atom.xml" rel="self"/>
   <link href="http://blog.hamobai.com/"/>
-  <updated>2014-09-13T18:34:08+08:00</updated>
+  <updated>2014-09-13T18:37:36+08:00</updated>
   <id>http://blog.hamobai.com/</id>
   <author>
     <name><![CDATA[Yang Bai]]></name>
@@ -19,7 +19,7 @@
     <updated>2014-09-12T17:30:00+08:00</updated>
     <id>http://blog.hamobai.com/2014/09/12/docker-analysis-3</id>
     <content type="html"><![CDATA[<p>在该系列的
-<a href="http://blog.hamobai.com/2014/08/29/docker-analysis-2/">上一篇文章</a>中，
+<a href="http://blog.hamobai.com/2014/08/31/docker-analysis-2/">上一篇文章</a>中，
  我们介绍了Docker daemon启动流程的前半部分，后半部分的代码会完成daemon
  启动中最重要的两个步骤：</p>
 
@@ -134,7 +134,7 @@ list以及execDriver等的初始化。</p>
     <updated>2014-08-31T12:30:00+08:00</updated>
     <id>http://blog.hamobai.com/2014/08/31/docker-analysis-2</id>
     <content type="html"><![CDATA[<p>在该系列的
-<a href="http://blog.hamobai.com/2014/08/29/docker-analysis-1/">上一篇文章</a>中，
+<a href="http://blog.hamobai.com/2014/08/31/docker-analysis-1/">上一篇文章</a>中，
 我们简单介绍了Docker的基本信息。在这篇文章中，我们将详细分析Docker
 daemon的启动代码。从这篇文章开始，我将用<code>$SRC</code>指代Docker源码所在的
 目录。</p>
@@ -280,7 +280,7 @@ container技术更轻量，所有容器运行在Host的内核上，共享Host的
 目在github的<a href="https://github.com/dotcloud/docker">页面</a>获取到该项目的源
 代码。</p>
 
-<p><a href="http://blog.hamobai.com/2014/08/30/docker-analysis-2/">下一篇</a>，我们将首先对Docker daemon的启动代码进行分析。</p>
+<p><a href="http://blog.hamobai.com/2014/08/31/docker-analysis-2/">下一篇</a>，我们将首先对Docker daemon的启动代码进行分析。</p>
 ]]></content>
   </entry>
   
